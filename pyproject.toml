@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cloudben"
 version = "0.1.2"
-description = "Simply CLI tool to interact with the Cloudflare APIs."
+description = "Simple CLI tool to interact with the Cloudflare APIs."
 authors = ["Alberto Gallinaro <alberto.gallinaro@audienceview.com>"]
 readme = "README.md"
 
