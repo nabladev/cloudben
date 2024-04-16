@@ -14,12 +14,16 @@ $ cloudben [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `create-record`
-* `delete-record`
-* `delete-records`
-* `get-records`
+* `create-record`: Create a DNS records for a specific zone.
+* `delete-record`: Delete a DNS record given a record id...
+* `delete-records`: Delete all the DNS records that match the...
+* `export-records`: Export DNS records for a specific zone.
+* `get-records`: Get all the DNS records for a specific...
 
 ## `cloudben create-record`
+
+Create a DNS records for a specific zone.
+Example usage: cloudben create-record $zoneid "cloudben" "my-azure-alb.azure.com" CNAME
 
 **Usage**:
 
@@ -42,6 +46,9 @@ $ cloudben create-record [OPTIONS] ZONE_ID NAME CONTENT TYPE:{A|CNAME|AAAA|TXT|M
 
 ## `cloudben delete-record`
 
+Delete a DNS record given a record id
+Example usage: cloudben delete-record $zoneid "<record_id>"
+
 **Usage**:
 
 ```console
@@ -60,23 +67,50 @@ $ cloudben delete-record [OPTIONS] ZONE_ID RECORD_ID
 
 ## `cloudben delete-records`
 
+Delete all the DNS records that match the provided queries. If both --name_query and --content_query are provided the records will match both the criterias (it's an AND not an OR)
+
+Example usage: cloudben delete-record $zoneid "<record_id>" --name_query "benny"
+
 **Usage**:
 
 ```console
-$ cloudben delete-records [OPTIONS] ZONE_ID QUERY
+$ cloudben delete-records [OPTIONS] ZONE_ID
 ```
 
 **Arguments**:
 
 * `ZONE_ID`: your zone id  [required]
-* `QUERY`: Text to be contained in the record's name.  [required]
 
 **Options**:
 
+* `--name-query TEXT`: Text to be contained in the record's name.
+* `--content-query TEXT`: Text to be contained in the record's value.
 * `--force`: Do not ask for confirmation when deleting.
 * `--help`: Show this message and exit.
 
+## `cloudben export-records`
+
+Export DNS records for a specific zone.
+Example usage: python cloudflare_cli.py export_dns_records --zone_id ZONE_ID
+
+**Usage**:
+
+```console
+$ cloudben export-records [OPTIONS] ZONE_ID
+```
+
+**Arguments**:
+
+* `ZONE_ID`: [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
 ## `cloudben get-records`
+
+Get all the DNS records for a specific zone given a query.
+Example usage: cloudben get-records $zoneid --query "ben" --json
 
 **Usage**:
 
@@ -90,6 +124,7 @@ $ cloudben get-records [OPTIONS] ZONE_ID
 
 **Options**:
 
-* `--query TEXT`: Text to be contained in the record's name.
+* `--name-query TEXT`: Text to be contained in the record's name.
+* `--content-query TEXT`: Text to be contained in the record's content.
 * `--json / --no-json`: will output valid JSON. It can we useful when using this command in your script. Vanity logging will be disabled  [default: no-json]
 * `--help`: Show this message and exit.
