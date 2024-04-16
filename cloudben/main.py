@@ -71,8 +71,10 @@ def create_record(
 @app.command()
 def get_records(
     zone_id: Annotated[str, typer.Argument(help="your zone id")],
-    query: Annotated[str, typer.Option(
-        help="Text to be contained in the record's name.")] = None,
+    name_query: Annotated[str, typer.Option(
+        help="Text to be contained in the record's name.")] = "",
+    content_query: Annotated[str, typer.Option(
+        help="Text to be contained in the record's content.")] = "",
     json: Annotated[bool, typer.Option(
         help="will output valid JSON. It can we useful when using this command in your script. Vanity logging will be disabled")] = False
 ):
@@ -96,19 +98,28 @@ def get_records(
     if res.status_code != 200:
         raise Exception(f'Request failed {res.text}')
 
-    if query == None:
+    if name_query == "" and content_query == "":
         if json:
             print(res.json()['result'])
         else:
             for r in res.json()['result']:
                 print(f'> ({r['id']}) {r['name']}: {r['content']}')
 
-        raise typer.Exit()
 
     matches = []
     for record in res.json()['result']:
-        if query in record['name']:
-            matches.append(record)
+        if name_query != "" and content_query != "":
+            if name_query in record['name'] and content_query in record['content']:
+                matches.append(record)
+                # continue
+
+        elif name_query != "":
+            if name_query in record['name']:
+                matches.append(record)
+
+        elif content_query != "":
+            if content_query in record['content']:
+                matches.append(record)
 
     if json:
         print(matches)
