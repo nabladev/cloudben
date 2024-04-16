@@ -27,6 +27,10 @@ def create_record(
     json: Annotated[bool, typer.Option(
         help="will output valid JSON. It can we useful when using this command in your script. Vanity logging will be disabled")] = False
 ):
+    """
+    Create a DNS records for a specific zone.
+    Example usage: cloudben create-record $zoneid "cloudben" "my-azure-alb.azure.com" CNAME
+    """
 
     token = os.getenv('CF_TOKEN')
     if not token or token == "":
@@ -72,7 +76,11 @@ def get_records(
     json: Annotated[bool, typer.Option(
         help="will output valid JSON. It can we useful when using this command in your script. Vanity logging will be disabled")] = False
 ):
-
+    """
+    Get all the DNS records for a specific zone given a query.
+    Example usage: cloudben get-records $zoneid --query "ben" --json
+    """
+    
     token = os.getenv('CF_TOKEN')
     if not token or token == "":
         raise Exception(
@@ -116,7 +124,11 @@ def delete_record(
     force: Annotated[bool, typer.Option(
         '--force', help="Do not ask for confirmation when deleting.")] = False,
 ):
-
+    """
+    Delete a DNS record given a record id
+    Example usage: cloudben delete-record $zoneid "<record_id>"
+    """
+    
     token = os.getenv('CF_TOKEN')
     if not token or token == "":
         raise Exception(
@@ -150,6 +162,7 @@ def delete_record(
 
     if del_res.status_code != 200:
         print(f'Error while deleting the record {del_res.text}')
+        raise typer.Exit(code=1)
     else:
         print(f'Record {res['name']} deleted')
 
@@ -157,15 +170,23 @@ def delete_record(
 @app.command()
 def delete_records(
     zone_id: Annotated[str, typer.Argument(help="your zone id")],
-    query: Annotated[str, typer.Argument(help="Text to be contained in the record's name.")],
+    name_query: Annotated[str, typer.Option(help="Text to be contained in the record's name.")] = "",
+    content_query: Annotated[str, typer.Option(help="Text to be contained in the record's value.")] = "",
     force: Annotated[bool, typer.Option(
         '--force', help="Do not ask for confirmation when deleting.")] = False,
 ):
+    """
+    Delete all the DNS records that match the provided queries. If both --name_query and --content_query are provided the records will match both the criterias (it's an AND not an OR)\n
+    Example usage: cloudben delete-record $zoneid "<record_id>" --name_query "benny"
+    """
 
     token = os.getenv('CF_TOKEN')
     if not token or token == "":
         raise Exception(
             f'CF_TOKEN env variable not found or not initialized, I got: {token}')
+
+    if name_query == "" and content_query == "":
+        raise typer.BadParameter("At least one of --name_query and --content_query must be provided and must not be an empty string.")
 
     headers = {
         'Authorization': f'Bearer {token}'
@@ -179,8 +200,20 @@ def delete_records(
 
     matches = []
     for record in res.json()['result']:
-        if query in record['name']:
-            matches.append(record)
+        if name_query != "" and content_query != "":
+            if name_query in record['name'] and content_query in record['content']:
+                matches.append(record)
+                continue
+
+        elif name_query != "":
+            if name_query in record['name']:
+                matches.append(record)
+            
+            
+        elif content_query != "":
+            if content_query in record['content']:
+                matches.append(record)
+
 
     print("Matched records:")
     for m in matches:
@@ -203,8 +236,33 @@ def delete_records(
 
         if del_res.status_code != 200:
             print(f'Error while deleting the record {del_res.text}')
+            raise typer.Exit(code=1)
         else:
             print(f'Record {match['name']} deleted\n')
+
+@app.command()
+def export_records(zone_id: str):
+    """
+    Export DNS records for a specific zone.
+    Example usage: python cloudflare_cli.py export_dns_records --zone_id ZONE_ID
+    """
+    
+    token = os.getenv('CF_TOKEN')
+    if not token or token == "":
+        raise Exception(
+            f'CF_TOKEN env variable not found or not initialized, I got: {token}')
+
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+
+    response = requests.get(f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/export", headers=headers)
+    
+    if response.status_code == 200:
+        typer.echo(response.text)
+    else:
+        typer.echo(f"Error: {response.status_code} - {response.json()['errors'][0]['message']}")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
